@@ -1,0 +1,22 @@
+.piece {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 1px solid black;
+    cursor: grab;
+    transition: transform 0.2s ease;
+  }
+  
+  .piece:active {
+    cursor: grabbing;
+    transform: scale(1.1);
+  }
+  
+  .piece.black {
+    background-color: #141414;
+  }
+  
+  .piece.white {
+    background-color: #fdfcfc;
+  }
+  

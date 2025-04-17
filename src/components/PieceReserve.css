@@ -1,0 +1,29 @@
+.piece-reserve {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin: 0 20px;
+  }
+  
+  .piece-count {
+    margin-top: 5px;
+    font-size: 16px;
+    font-weight: bold;
+    color: white;
+  }
+  
+  .pieces-stack {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    top: 0px;
+    width: 30px; 
+    height: 30px; 
+  }
+  
+  .pieces-stack .piece {
+    position: absolute;
+    top: 0px;
+    left: 0px;
+  }
+  
