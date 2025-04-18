@@ -67,4 +67,14 @@ export default class ClassicRules {
     if (moveCount < allowedMoveCount) return true;
     return false;
   }
+
+  getAvailableDices(dice1, dice2) {
+    console.log("dice1: ", dice1);
+    console.log("dice2: ", dice2);
+    const isSame = dice1 === dice2;
+    let array = isSame ? new Array(4) : new Array(2);
+    isSame ? array.fill(dice1) : array = [dice1, dice2];
+    console.log(array);
+    return array;
+  }
 }

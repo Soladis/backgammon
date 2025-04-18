@@ -38,7 +38,7 @@ function App() {
     white: generatePieces("white", 15, 1),
     black: generatePieces("black", 15, 16),
   });
-
+  const [brokenReservePieces, setBrokenReservePieces] = useState({ white: [], black: [] });
   const [points, setPoints] = useState(Array.from({ length: 24 }, () => []));
   const diceImages = [Dice1, Dice2, Dice3, Dice4, Dice5, Dice6];
   const [dice1, setDice1] = useState(Dice1);
@@ -54,13 +54,26 @@ function App() {
   const removePieceById = (array, id) =>
     array.filter((piece) => piece.id !== id);
 
-  // After hit add to reserve
+  // After pick add to normal reserve.
   const handleReturnToReserve = (piece) => {
     setPoints((prevPoints) =>
       prevPoints.map((point) => removePieceById(point, piece.id))
     );
 
     setReservePieces((prev) => {
+      const updated = { ...prev };
+      updated[piece.color] = [...updated[piece.color], piece];
+      return updated;
+    });
+  };
+
+  // After hit add to broken reserve.
+  const handleToBrokenReserve = (piece) => {
+    setPoints((prevPoints) =>
+      prevPoints.map((point) => removePieceById(point, piece.id))
+    );
+
+    setBrokenReservePieces((prev) => {
       const updated = { ...prev };
       updated[piece.color] = [...updated[piece.color], piece];
       return updated;
@@ -92,9 +105,12 @@ function App() {
     const first = getRandomNumber(6);
     const second = getRandomNumber(6);
 
+    //Dice images
     setDice1(diceImages[first - 1]);
     setDice2(diceImages[second - 1]);
-    setAvailableDices([first, second]);
+
+    //Dice values
+    setAvailableDices(rules.getAvailableDices(first, second));
     setIsDiceRolled(true);
     setMoveCounter(0); // Reset moves for new turn
     //Check if any move available
@@ -197,7 +213,7 @@ function App() {
       hitPiece = targetPoint[0];
     }
     if (hitPiece) {
-      handleReturnToReserve(hitPiece);
+      handleToBrokenReserve(hitPiece);
     }
 
     // If piece is coming from reserve
@@ -294,6 +310,8 @@ function App() {
           points={points}
           onDropBoard={handlePieceDrop}
           onReturnToReserve={handleReturnToReserve}
+          onToBrokenReserve={handleToBrokenReserve}
+          brokenReservePieces={brokenReservePieces}
         />
 
         <button className="positioning-button" onClick={positionAllPieces}>

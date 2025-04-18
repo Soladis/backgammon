@@ -1,0 +1,32 @@
+.broken-piece-reserve {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    align-content: center;
+    justify-content: center;
+    justify-items: center;
+    margin: 0 20px;
+  }
+  
+  .broken-piece-count {
+    margin-top: 5px;
+    font-size: 16px;
+    font-weight: bold;
+    color: white;
+  }
+  
+  .broken-pieces-stack {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    top: 0px;
+    width: 30px; 
+    height: 30px; 
+  }
+  
+  .broken-pieces-stack .piece {
+    position: absolute;
+    top: 0px;
+    left: 0px;
+  }
+  
