@@ -1,6 +1,6 @@
 import React from "react";
 import Piece from "./Piece";
-import "./PieceReserve.css";
+import "./BrokenPieceReserve.css";
 
 const BrokenPieceReserve = ({ color, pieces, toBrokenReserve }) => {
   return (

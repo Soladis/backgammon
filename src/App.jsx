@@ -51,8 +51,8 @@ function App() {
 
   // -------------- Helper functions --------------
   // To remove the piece
-  const removePieceById = (array, id) =>
-    array.filter((piece) => piece.id !== id);
+  const removePieceById = (points, id) =>
+    points.filter((piece) => piece.id !== id);
 
   // After pick add to normal reserve.
   const handleReturnToReserve = (piece) => {
