@@ -9,6 +9,7 @@ import Dice5 from "./assets/Dice5.jpg";
 import Dice6 from "./assets/Dice6.jpg";
 import ClassicRules from "./rules/ClassicRules";
 import Toast from "./components/Toast";
+import BrokenPieceReserve from "./components/BrokenPieceReserve";
 
 // Generate the pieces
 const generatePieces = (color, count, startId) => {
@@ -38,7 +39,10 @@ function App() {
     white: generatePieces("white", 15, 1),
     black: generatePieces("black", 15, 16),
   });
-  const [brokenReservePieces, setBrokenReservePieces] = useState({ white: [], black: [] });
+  const [brokenReservePieces, setBrokenReservePieces] = useState({
+    white: [],
+    black: [],
+  });
   const [points, setPoints] = useState(Array.from({ length: 24 }, () => []));
   const diceImages = [Dice1, Dice2, Dice3, Dice4, Dice5, Dice6];
   const [dice1, setDice1] = useState(Dice1);
@@ -55,7 +59,8 @@ function App() {
     points.filter((piece) => piece.id !== id);
 
   // After pick add to normal reserve.
-  const handleReturnToReserve = (piece) => {
+  const handleReturnToReserve = (piece, fromPoint) => {
+    if (!rules.isAvailableForPickup(availableDices, points, fromPoint, brokenReservePieces, piece)) return false;
     setPoints((prevPoints) =>
       prevPoints.map((point) => removePieceById(point, piece.id))
     );
@@ -65,6 +70,10 @@ function App() {
       updated[piece.color] = [...updated[piece.color], piece];
       return updated;
     });
+
+    const diceValueToDelete = pieceColor === "white" ? (24 - pickFrom) : (pickFrom + 1)
+    availableDices.splice(diceValueToDelete, 1);
+    // setAvailableDices
   };
 
   // After hit add to broken reserve.
@@ -110,10 +119,20 @@ function App() {
     setDice2(diceImages[second - 1]);
 
     //Dice values
-    setAvailableDices(rules.getAvailableDices(first, second));
+    const newDiceValues = rules.getAvailableDices(first, second);
+    
+    //Check if any move available
+    console.log("broken reserve pieces: ", brokenReservePieces)
+    if (!rules.hasMove(newDiceValues, points, brokenReservePieces, turn)) {
+      showToast("You can not place your broken piece. Switching turns.");
+      setTurn(turn === "white" ? "black" : "white");
+      return;
+    }
+
+    
+    setAvailableDices([first, second]);
     setIsDiceRolled(true);
     setMoveCounter(0); // Reset moves for new turn
-    //Check if any move available
   };
 
   const rollDiceAtStart = () => {
@@ -150,6 +169,36 @@ function App() {
     });
   };
 
+  const positionAllPiecesTest = () => {
+    const allBoardPieces = points.flat();
+    const allReservePieces = {
+      white: [...reservePieces.white],
+      black: [...reservePieces.black],
+    };
+
+    allBoardPieces.forEach((piece) => {
+      allReservePieces[piece.color].push(piece);
+    });
+
+    const newPoints = Array.from({ length: 24 }, () => []);
+
+    newPoints[23] = allReservePieces.white.slice(0, 3);
+    newPoints[22] = allReservePieces.white.slice(3, 6);
+    newPoints[21] = allReservePieces.white.slice(6, 10);
+    newPoints[20] = allReservePieces.white.slice(10, 12);
+    newPoints[19] = allReservePieces.white.slice(12, 15);
+    setPoints(newPoints);
+
+    setReservePieces({
+      white: allReservePieces.white.slice(15),
+      black: allReservePieces.black,
+    });
+    setBrokenReservePieces({
+      white: [],
+      black: allReservePieces.black.slice(2),
+    })
+  }
+
   // Handle piece movement
   const handlePieceDrop = (targetIndex, piece, from) => {
     // Variables
@@ -169,8 +218,17 @@ function App() {
       return;
     }
 
+    // Check if broken piece reserve has any piece. If so, you must play it first
+    if(brokenReservePieces[piece.color].length !== 0) {
+      if(!brokenReservePieces[piece.color].some(item => item.id === piece.id)) {
+        showToast("You must place the broken piece first!");
+      return;
+      }
+    }
+
+    //
     //Check rules and hit
-    if (!rules.hasMove(dice1, dice2, moveCounter)) {
+    if (!rules.hasMove(availableDices, points, brokenReservePieces, turn)) {
       showToast("You don't have any moves left!");
       return;
     }
@@ -182,7 +240,8 @@ function App() {
         targetIndex,
         piece,
         availableDices,
-        turn
+        turn, 
+        brokenReservePieces
       )
     ) {
       showToast("Invalid move under current game rules.");
@@ -219,6 +278,19 @@ function App() {
     // If piece is coming from reserve
     if (from === "reserve") {
       setReservePieces((prev) => {
+        const updated = { ...prev };
+        updated[piece.color] = removePieceById(updated[piece.color], piece.id);
+        return updated;
+      });
+    }
+
+    // If piece is coming from broken reserve  
+    if(from === "brokenReserve") {
+      // if(piece.color === "white") {
+      //   points[targetIndex]
+      // }
+
+      setBrokenReservePieces((prev) => {
         const updated = { ...prev };
         updated[piece.color] = removePieceById(updated[piece.color], piece.id);
         return updated;
@@ -315,6 +387,9 @@ function App() {
         />
 
         <button className="positioning-button" onClick={positionAllPieces}>
+          Click
+        </button>
+        <button className="positioning-button" onClick={positionAllPiecesTest}>
           Click
         </button>
       </div>

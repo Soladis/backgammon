@@ -17,7 +17,8 @@ const Point = ({ index, pieces, onDropPoint, onReturnToReserve }) => {
 
   const handleRightClick = (e, piece) => {
     e.preventDefault();
-    onReturnToReserve(piece);
+    console.log(e.dataTransfer)
+    onReturnToReserve(piece, index);
   };
 
   return (

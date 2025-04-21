@@ -5,14 +5,15 @@ export default class ClassicRules {
     availableDiceValues,
     pieceColor
   ) {
-    console.log(pieceColor);
     let distance;
     if (pieceColor === "white") {
-      distance = targetIndex - fromIndex;
+      if (fromIndex === "brokenReserve") { fromIndex = -1 };
+      distance = targetIndex - Number(fromIndex);
     } else {
-      distance = fromIndex - targetIndex;
+      if (fromIndex === "brokenReserve") { fromIndex = 24 };
+      distance = Number(fromIndex) - targetIndex;
     }
-    console.log(availableDiceValues.includes(distance));
+
     if (distance < 0) return false;
     if (!availableDiceValues.includes(distance)) return false;
     return true;
@@ -24,7 +25,8 @@ export default class ClassicRules {
     targetIndex,
     piece,
     availableDiceValues,
-    turn
+    turn,
+    brokenReserve
   ) {
     // Check if piece color mathches with turn
     if (piece.color !== turn) return false;
@@ -62,10 +64,23 @@ export default class ClassicRules {
     return false;
   }
 
-  hasMove(dice1, dice2, moveCount) {
-    const allowedMoveCount = dice1 === dice2 ? 4 : 2;
-    if (moveCount < allowedMoveCount) return true;
-    return false;
+  hasMove(availableDices, points, brokenReserve, turn) {
+    // if there are broken pieces, must place them first
+    if (brokenReserve[turn].length !== 0) {
+      const pointsRange = turn === "white" ? points.slice(0, 6) : points.slice(-6).reverse();
+      for(let i = 0; i < pointsRange.length; i++){
+        const pointColor = pointsRange[i].length > 0 ? pointsRange[i][0].color : turn;
+        if (pointColor === turn && availableDices.some(value => value === i+1)) {
+          console.log("No available move.");
+          return true;
+        }
+        return false;
+      }
+    };
+
+    // check if any value is left to play 
+    if (availableDices.length === 0) return false;
+    return true;
   }
 
   getAvailableDices(dice1, dice2) {
@@ -76,5 +91,38 @@ export default class ClassicRules {
     isSame ? array.fill(dice1) : array = [dice1, dice2];
     console.log(array);
     return array;
+  }
+
+  isAvailableForPickup(availableDices, points, pickFrom, brokenReserve, piece) {
+    const pieceColor = piece.color;
+    console.log("available dices: ", availableDices);
+    console.log("pick from: ", pickFrom);
+
+    if (brokenReserve[pieceColor].length !== 0) {
+      console.log(`${pieceColor} has broken piece!`);
+      return false;
+    }
+
+    if (!availableDices.includes(pieceColor === "white" ? (24 - pickFrom) : (pickFrom + 1))) {
+      return false;
+    };
+
+    console.log("izin verdi");
+    return true;
+
+    // if (pieceColor === "white") {
+    //   if (!availableDices.includes(pickFrom + 1)) {
+    //     return false;
+    //   };
+    // }
+    // else if (pieceColor === "black") {
+    //   if (!availableDices.includes(24 - pickFrom)) {
+    //     return false;
+    //   };
+    // }
+  }
+
+  hasAnyMove(availableDices, points, brokenReserve, turn) {
+    
   }
 }
