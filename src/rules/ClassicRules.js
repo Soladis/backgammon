@@ -89,7 +89,6 @@ export default class ClassicRules {
     const isSame = dice1 === dice2;
     let array = isSame ? new Array(4) : new Array(2);
     isSame ? array.fill(dice1) : array = [dice1, dice2];
-    console.log(array);
     return array;
   }
 
@@ -107,7 +106,6 @@ export default class ClassicRules {
       return false;
     };
 
-    console.log("izin verdi");
     return true;
 
     // if (pieceColor === "white") {

@@ -61,6 +61,7 @@ function App() {
   // After pick add to normal reserve.
   const handleReturnToReserve = (piece, fromPoint) => {
     if (!rules.isAvailableForPickup(availableDices, points, fromPoint, brokenReservePieces, piece)) return false;
+
     setPoints((prevPoints) =>
       prevPoints.map((point) => removePieceById(point, piece.id))
     );
@@ -71,10 +72,14 @@ function App() {
       return updated;
     });
 
-    const diceValueToDelete = pieceColor === "white" ? (24 - pickFrom) : (pickFrom + 1)
-    availableDices.splice(diceValueToDelete, 1);
-    // setAvailableDices
+    // Determine correct dice value used for pickup
+    const diceValueUsed = piece.color === "white"
+      ? 24 - fromPoint
+      : fromPoint + 1;
+
+    consumeDiceValue(diceValueUsed);
   };
+
 
   // After hit add to broken reserve.
   const handleToBrokenReserve = (piece) => {
@@ -98,42 +103,54 @@ function App() {
     setTimeout(() => setToastMessage(null), 3000);
   };
 
+  // Remove used dice
+  const consumeDiceValue = (usedValue) => {
+    setAvailableDices((prev) => {
+      const newDice = [...prev];
+      const index = newDice.indexOf(usedValue);
+      if (index !== -1) newDice.splice(index, 1);
+      return newDice;
+    });
+  };
+  
+
   // -------------- Main functions --------------
   // Roll dice
   const rollDice = () => {
-    if (isDiceRolled && rules?.hasMove(dice1, dice2, moveCounter)) {
+    // If dice already rolled and moves remain, don't allow reroll
+    if (isDiceRolled && availableDices.length > 0) {
       showToast("You still have moves left.");
       return;
     }
-
-    if (isDiceRolled && moveCounter === 0) {
-      showToast("You already rolled this turn!");
-      return;
-    }
-
+  
+    // Roll two dice
     const first = getRandomNumber(6);
     const second = getRandomNumber(6);
-
-    //Dice images
+  
+    // Set dice images
     setDice1(diceImages[first - 1]);
     setDice2(diceImages[second - 1]);
-
-    //Dice values
+  
+    // Get dice values depending on double or not
     const newDiceValues = rules.getAvailableDices(first, second);
-    
-    //Check if any move available
-    console.log("broken reserve pieces: ", brokenReservePieces)
-    if (!rules.hasMove(newDiceValues, points, brokenReservePieces, turn)) {
-      showToast("You can not place your broken piece. Switching turns.");
+  
+    // Set them immediately
+    setAvailableDices(newDiceValues);
+  
+    // Check for valid moves based on broken pieces
+    const canMove = rules.hasMove(newDiceValues, points, brokenReservePieces, turn);
+  
+    if (!canMove) {
+      showToast("You cannot place your broken piece. Switching turns.");
+      setIsDiceRolled(false);
       setTurn(turn === "white" ? "black" : "white");
       return;
     }
-
-    
-    setAvailableDices([first, second]);
+  
+    // If valid, proceed with turn
     setIsDiceRolled(true);
-    setMoveCounter(0); // Reset moves for new turn
   };
+  
 
   const rollDiceAtStart = () => {
     setTurn(getRandomNumber(2) === 1 ? "white" : "black");
@@ -201,81 +218,60 @@ function App() {
 
   // Handle piece movement
   const handlePieceDrop = (targetIndex, piece, from) => {
-    // Variables
-    let movesLeft;
-    let newMoveCount;
     let updatedPoints;
     let hitPiece = null;
     const targetPoint = points[targetIndex];
     const wasHit = rules.isHit(targetPoint, piece);
     const previousPoints = [...points];
+
     const sourceIndex = previousPoints.findIndex((point) =>
       point.some((p) => p.id === piece.id)
     );
 
-    // If dropped on same point, skip
-    if (sourceIndex === targetIndex) {
-      return;
-    }
+    if (sourceIndex === targetIndex) return;
 
-    // Check if broken piece reserve has any piece. If so, you must play it first
-    if(brokenReservePieces[piece.color].length !== 0) {
-      if(!brokenReservePieces[piece.color].some(item => item.id === piece.id)) {
+    if (brokenReservePieces[piece.color].length !== 0) {
+      if (!brokenReservePieces[piece.color].some(item => item.id === piece.id)) {
         showToast("You must place the broken piece first!");
-      return;
+        return;
       }
     }
 
-    //
-    //Check rules and hit
-    if (!rules.hasMove(availableDices, points, brokenReservePieces, turn)) {
-      showToast("You don't have any moves left!");
-      return;
-    }
-
-    if (
-      !rules.isMoveAllowed(
-        from,
-        targetPoint,
-        targetIndex,
-        piece,
-        availableDices,
-        turn, 
-        brokenReservePieces
-      )
-    ) {
+    console.log(availableDices);
+    if (!rules.isMoveAllowed(from, targetPoint, targetIndex, piece, availableDices, turn, brokenReservePieces)) {
       showToast("Invalid move under current game rules.");
       return;
     }
 
-    //Remove played numnber from available dices
-    const valueToRemove = availableDices.indexOf(Math.abs(targetIndex - from));
-    availableDices.splice(valueToRemove, 1);
+    // Determine correct dice value based on direction and source
+    let moveUsed;
+    if (from === "brokenReserve") {
+      moveUsed = piece.color === "white"
+        ? targetIndex + 1
+        : 24 - targetIndex;
+    } else {
+      moveUsed = Math.abs(targetIndex - from);
+    }
 
-    //Check if any move available
+    consumeDiceValue(moveUsed);
 
-    //If no available moves left, switch turn
-    if (availableDices.length === 0)
+    // If last move, switch turn
+    if (availableDices.length === 1) {
       setTurn(turn === "white" ? "black" : "white");
+      setIsDiceRolled(false);
+    }
 
-    //Remove piece from prev point, add to target point and update points
     updatedPoints = previousPoints.map((point) =>
       removePieceById(point, piece.id)
     );
-
     updatedPoints[targetIndex] = [...updatedPoints[targetIndex], piece];
-
     setPoints(updatedPoints);
 
-    // Handle hit
     if (wasHit) {
       hitPiece = targetPoint[0];
-    }
-    if (hitPiece) {
-      handleToBrokenReserve(hitPiece);
+      if (hitPiece) handleToBrokenReserve(hitPiece);
     }
 
-    // If piece is coming from reserve
     if (from === "reserve") {
       setReservePieces((prev) => {
         const updated = { ...prev };
@@ -284,32 +280,15 @@ function App() {
       });
     }
 
-    // If piece is coming from broken reserve  
-    if(from === "brokenReserve") {
-      // if(piece.color === "white") {
-      //   points[targetIndex]
-      // }
-
+    if (from === "brokenReserve") {
       setBrokenReservePieces((prev) => {
         const updated = { ...prev };
         updated[piece.color] = removePieceById(updated[piece.color], piece.id);
         return updated;
       });
     }
-
-    // Check if any move left
-    newMoveCount = moveCounter + 1;
-    movesLeft = rules.hasMove(dice1, dice2, newMoveCount);
-
-    // Update move counter
-    setMoveCounter(newMoveCount);
-
-    // If no more moves, reset dice roll
-    if (!movesLeft) {
-      setIsDiceRolled(false); // Allow re-rolling next turn
-      console.log("Turn over, dice will reset.");
-    }
   };
+
 
   // -------------- Game mode selection screen --------------
   if (!gameMode) {
